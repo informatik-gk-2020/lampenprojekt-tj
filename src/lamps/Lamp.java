@@ -8,12 +8,15 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 
 public class Lamp extends Circle {
+    private static final Color OFF_COLOR = Color.GREY;
+    private static final Color ON_COLOR = Color.YELLOW;
+
     private final SimpleBooleanProperty on = new SimpleBooleanProperty(false);
     private final SimpleObjectProperty<Group> group = new SimpleObjectProperty<>(null);
 
     public Lamp() {
         setRadius(20);
-        fillProperty().bind(Bindings.when(on).then(Color.LIGHTGREY).otherwise(Color.BLACK));
+        fillProperty().bind(Bindings.when(on).then(ON_COLOR).otherwise(OFF_COLOR));
 
         setOnMouseClicked(event -> {
             if(event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
