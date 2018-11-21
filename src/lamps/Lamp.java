@@ -3,6 +3,7 @@ package lamps;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.scene.effect.DropShadow;
 import javafx.scene.input.MouseButton;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -17,6 +18,12 @@ public class Lamp extends Circle {
     public Lamp() {
         setRadius(20);
         fillProperty().bind(Bindings.when(on).then(ON_COLOR).otherwise(OFF_COLOR));
+
+        setStroke(Color.GREY);
+        setStrokeWidth(1);
+
+        var shadowEffect = new DropShadow(20, ON_COLOR);
+        effectProperty().bind(Bindings.when(on).then(shadowEffect).otherwise((DropShadow)null));
 
         setOnMouseClicked(event -> {
             if(event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
