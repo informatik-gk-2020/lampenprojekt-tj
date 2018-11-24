@@ -8,19 +8,20 @@ import javafx.collections.ObservableList;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.TextFieldListCell;
-import javafx.scene.input.MouseButton;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class Main extends Application {
     private final ObservableList<Group> groups = FXCollections.observableArrayList();
     private final ObservableList<Lamp> lamps = FXCollections.observableArrayList();
 
-    private final SimpleObjectProperty<Lamp> selectedLamp = new SimpleObjectProperty<>(null);
     private final SimpleObjectProperty<Group> selectedGroup = new SimpleObjectProperty<>(null);
+
+    private LampsContainer lampsContainer;
 
     public static void main(String[] args) {
         launch(args);
@@ -28,13 +29,8 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        var lampsContainer = new LampsContainer();
+        lampsContainer = new LampsContainer();
         Bindings.bindContent(lampsContainer.getChildren(), lamps);
-        lampsContainer.setOnMouseClicked(event -> {
-            var target = event.getTarget();
-            if (event.getButton() == MouseButton.PRIMARY && target instanceof Lamp)
-                selectedLamp.set((Lamp) target);
-        });
 
         var toolbar = createToolbar();
         var groupsPane = createGroupsPane();
@@ -56,20 +52,29 @@ public class Main extends Application {
         primaryStage.show();
     }
 
+    /**
+     * Toggles multiple lamps
+     * @param lamps the lamps to toggle
+     */
+    private void toggleLamps(List<Lamp> lamps) {
+        // The lamps get turned off if all of them are turned on
+        // if any of them is turned off, they are turned on to ensure they have the same state
+        var newState = !lamps.stream().allMatch(Lamp::isOn);
+
+        for (Lamp lamp : lamps) {
+            lamp.setOn(newState);
+        }
+    }
+
     private ToolBar createToolbar() {
         // conditions
-        var noLamp = selectedLamp.isNull();
-        var noLampOrGroup = noLamp.or(selectedGroup.isNull());
-        var selectedLampInGroup = Bindings.equal(Bindings.select(selectedLamp, "group"), selectedGroup);
+        var noLamp = Bindings.isEmpty(lampsContainer.getSelectedLamps());
 
         // toggle
 
         var toggleButton = new Button("Umschalten");
         toggleButton.disableProperty().bind(noLamp);
-        toggleButton.setOnAction(event -> {
-            var selection = selectedLamp.get();
-            selection.setOn(!selection.isOn());
-        });
+        toggleButton.setOnAction(event -> toggleLamps(lampsContainer.getSelectedLamps()));
 
         // add and remove
 
@@ -82,23 +87,41 @@ public class Main extends Application {
         var removeButton = new Button("Entfernen");
         removeButton.disableProperty().bind(noLamp);
         removeButton.setOnAction(event -> {
-            lamps.remove(selectedLamp.get());
-            selectedLamp.set(null);
+            lamps.removeAll(lampsContainer.getSelectedLamps());
+            lampsContainer.getSelectedLamps().clear();
         });
 
         // group related buttons
 
         var addToGroupButton = new Button("Zur Gruppe hinzufügen");
-        addToGroupButton.disableProperty().bind(
-                noLampOrGroup.or(selectedLampInGroup)
-        );
-        addToGroupButton.setOnAction(event -> selectedLamp.get().setGroup(selectedGroup.get()));
+        addToGroupButton.setOnAction(event -> {
+            var group = selectedGroup.get();
+            for (var lamp : lampsContainer.getSelectedLamps()) {
+                lamp.setGroup(group);
+            }
+        });
+
+        // disable the button if there are either no lamps or groups selected
+        // or all lamps are already in the selected group
+        addToGroupButton.disableProperty().bind(Bindings.createBooleanBinding(() -> {
+            var group = selectedGroup.get();
+            var lamps = lampsContainer.getSelectedLamps();
+
+            return group == null || lamps.isEmpty() || lamps.stream().allMatch(lamp -> lamp.getGroup() == group);
+        }, selectedGroup, lampsContainer.getSelectedLamps()));
 
         var removeFromGroupButton = new Button("Aus Gruppe entfernen");
-        removeFromGroupButton.disableProperty().bind(
-                noLampOrGroup.or(selectedLampInGroup.not())
-        );
-        removeFromGroupButton.setOnAction(event -> selectedLamp.get().setGroup(null));
+        removeFromGroupButton.setOnAction(event -> {
+            for (var lamp : lampsContainer.getSelectedLamps()) {
+                lamp.setGroup(null);
+            }
+        });
+
+        // disable the button if none of the selected lamps have a group
+        removeFromGroupButton.disableProperty().bind(Bindings.createBooleanBinding(
+                () -> lampsContainer.getSelectedLamps().stream().allMatch(lamp -> lamp.getGroup() == null),
+                lampsContainer.getSelectedLamps()
+        ));
 
         // create the toolbar
 
@@ -145,13 +168,7 @@ public class Main extends Application {
                     .filter(lamp -> selectedGroups.contains(lamp.getGroup()))
                     .collect(Collectors.toList());
 
-            // The lamps get turned off if all of them are turned on
-            // if any of them is turned off, they are turned on to ensure they have the same state
-            var newState = !selectedLamps.stream().allMatch(Lamp::isOn);
-
-            for (Lamp lamp : selectedLamps) {
-                lamp.setOn(newState);
-            }
+            toggleLamps(selectedLamps);
         });
 
         // add and remove
