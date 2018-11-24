@@ -13,6 +13,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 public class Main extends Application {
     private final ObservableList<Group> groups = FXCollections.observableArrayList();
@@ -134,6 +135,25 @@ public class Main extends Application {
         // conditions
         var noGroup = Bindings.isEmpty(listView.getSelectionModel().getSelectedItems());
 
+        // toggle
+
+        var toggleButton = new Button("Umschalten");
+        toggleButton.disableProperty().bind(noGroup);
+        toggleButton.setOnAction(event -> {
+            var selectedGroups = listView.getSelectionModel().getSelectedItems();
+            var selectedLamps = lamps.stream()
+                    .filter(lamp -> selectedGroups.contains(lamp.getGroup()))
+                    .collect(Collectors.toList());
+
+            // The lamps get turned off if all of them are turned on
+            // if any of them is turned off, they are turned on to ensure they have the same state
+            var newState = !selectedLamps.stream().allMatch(Lamp::isOn);
+
+            for (Lamp lamp : selectedLamps) {
+                lamp.setOn(newState);
+            }
+        });
+
         // add and remove
 
         var addButton = new Button("Neu");
@@ -163,6 +183,11 @@ public class Main extends Application {
                     .forEach(lamp -> lamp.setGroup(null));
         });
 
-        return new ToolBar(addButton, removeButton);
+        return new ToolBar(
+                toggleButton,
+                new Separator(),
+                addButton,
+                removeButton
+        );
     }
 }
