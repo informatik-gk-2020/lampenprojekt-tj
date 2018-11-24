@@ -14,12 +14,13 @@ public class Lamp extends Circle {
 
     private final SimpleBooleanProperty on = new SimpleBooleanProperty(false);
     private final SimpleObjectProperty<Group> group = new SimpleObjectProperty<>(null);
+    private final SimpleBooleanProperty selected = new SimpleBooleanProperty(false);
 
     public Lamp() {
         setRadius(20);
         fillProperty().bind(Bindings.when(on).then(ON_COLOR).otherwise(OFF_COLOR));
 
-        setStroke(Color.GREY);
+        strokeProperty().bind(Bindings.when(selected).then(Color.BLACK).otherwise(Color.GREY));
         setStrokeWidth(1);
 
         var shadowEffect = new DropShadow(20, ON_COLOR);
@@ -55,5 +56,17 @@ public class Lamp extends Circle {
 
     public void setGroup(Group group) {
         this.group.set(group);
+    }
+
+    public boolean isSelected() {
+        return selected.get();
+    }
+
+    public SimpleBooleanProperty selectedProperty() {
+        return selected;
+    }
+
+    public void setSelected(boolean selected) {
+        this.selected.set(selected);
     }
 }

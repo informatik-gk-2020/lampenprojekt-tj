@@ -4,6 +4,7 @@ import javafx.application.Application;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -31,6 +32,23 @@ public class Main extends Application {
     public void start(Stage primaryStage) {
         lampsContainer = new LampsContainer();
         Bindings.bindContent(lampsContainer.getChildren(), lamps);
+
+        // Bind the selected property of all lamps that get added
+        var selectedLamps = lampsContainer.getSelectedLamps();
+        lamps.addListener((ListChangeListener<Lamp>) c -> {
+            while(c.next()) {
+                for (var lamp : c.getAddedSubList()) {
+                    lamp.selectedProperty().bind(Bindings.createBooleanBinding(
+                            () -> selectedLamps.contains(lamp),
+                            selectedLamps
+                    ));
+                }
+
+                for (var lamp : c.getRemoved()) {
+                    lamp.selectedProperty().unbind();
+                }
+            }
+        });
 
         var toolbar = createToolbar();
         var groupsPane = createGroupsPane();
