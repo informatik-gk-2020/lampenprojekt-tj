@@ -10,20 +10,27 @@ import javafx.scene.shape.Circle;
 
 public class Lamp extends Circle {
     private static final Color OFF_COLOR = Color.GREY;
-    private static final Color ON_COLOR = Color.YELLOW;
+
+    public static final Color DEFAULT_COLOR = Color.YELLOW;
 
     private final SimpleBooleanProperty on = new SimpleBooleanProperty(false);
     private final SimpleObjectProperty<Group> group = new SimpleObjectProperty<>(null);
     private final SimpleBooleanProperty selected = new SimpleBooleanProperty(false);
 
     public Lamp() {
+        var currentColor = Bindings.when(group.isNull())
+                .then(DEFAULT_COLOR)
+                .otherwise(Bindings.select(group, "color"));
+
         setRadius(20);
-        fillProperty().bind(Bindings.when(on).then(ON_COLOR).otherwise(OFF_COLOR));
+        fillProperty().bind(Bindings.when(on).then(currentColor).otherwise(OFF_COLOR));
 
         strokeProperty().bind(Bindings.when(selected).then(Color.BLACK).otherwise(Color.GREY));
         setStrokeWidth(1);
 
-        var shadowEffect = new DropShadow(20, ON_COLOR);
+        var shadowEffect = new DropShadow();
+        shadowEffect.setRadius(20);
+        shadowEffect.colorProperty().bind(currentColor);
         effectProperty().bind(Bindings.when(on).then(shadowEffect).otherwise((DropShadow)null));
 
         setOnMouseClicked(event -> {
