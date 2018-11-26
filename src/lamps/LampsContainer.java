@@ -57,6 +57,8 @@ public class LampsContainer extends BorderPane {
                     selectedLamps.add((Lamp) target);
                 else
                     selectedLamps.setAll((Lamp) target);
+            } else {
+                selectedLamps.clear();
             }
         });
 
