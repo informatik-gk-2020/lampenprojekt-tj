@@ -1,5 +1,6 @@
 package lamps;
 
+import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.input.MouseButton;
@@ -8,19 +9,24 @@ import javafx.scene.layout.BorderPane;
 public class LampsContainer extends BorderPane {
     private Lamp draggingLamp = null;
 
-    private ObservableList<Lamp> selectedLamps = FXCollections.observableArrayList();
+    private final ObservableList<Lamp> selectedLamps = FXCollections.observableArrayList();
+
+    private final ObservableList<Lamp> lamps = FXCollections.observableArrayList();
 
     public LampsContainer() {
+        // bind the content to the lamps
+        Bindings.bindContent(getChildren(), lamps);
+
         setOnMousePressed(event -> {
             var target = event.getTarget();
-            if(event.getButton() == MouseButton.PRIMARY && target instanceof Lamp) {
+            if (event.getButton() == MouseButton.PRIMARY && target instanceof Lamp) {
                 draggingLamp = (Lamp) target;
                 event.consume();
             }
         });
 
         setOnMouseReleased(event -> {
-            if(event.getButton() == MouseButton.PRIMARY && draggingLamp != null) {
+            if (event.getButton() == MouseButton.PRIMARY && draggingLamp != null) {
                 event.consume();
                 draggingLamp = null;
             }
@@ -38,18 +44,23 @@ public class LampsContainer extends BorderPane {
             var target = event.getTarget();
             if (event.getButton() == MouseButton.PRIMARY && target instanceof Lamp) {
                 // Remove the lamp if it was already selected
-                if(selectedLamps.remove(target))
+                if (selectedLamps.remove(target))
                     return;
 
-                if(event.isControlDown())
-                    selectedLamps.add((Lamp)target);
+                if (event.isControlDown())
+                    selectedLamps.add((Lamp) target);
                 else
-                    selectedLamps.setAll((Lamp)target);
+                    selectedLamps.setAll((Lamp) target);
             }
         });
     }
 
+
     public ObservableList<Lamp> getSelectedLamps() {
         return selectedLamps;
+    }
+
+    public ObservableList<Lamp> getLamps() {
+        return lamps;
     }
 }

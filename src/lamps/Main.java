@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 
 public class Main extends Application {
     private final ObservableList<Group> groups = FXCollections.observableArrayList();
-    private final ObservableList<Lamp> lamps = FXCollections.observableArrayList();
+    //private final ObservableList<Lamp> lamps = FXCollections.observableArrayList();
 
     private final SimpleObjectProperty<Group> selectedGroup = new SimpleObjectProperty<>(null);
 
@@ -31,11 +31,10 @@ public class Main extends Application {
     @Override
     public void start(Stage primaryStage) {
         lampsContainer = new LampsContainer();
-        Bindings.bindContent(lampsContainer.getChildren(), lamps);
 
         // Bind the selected property of all lamps that get added
         var selectedLamps = lampsContainer.getSelectedLamps();
-        lamps.addListener((ListChangeListener<Lamp>) c -> {
+        lampsContainer.getLamps().addListener((ListChangeListener<Lamp>) c -> {
             while(c.next()) {
                 for (var lamp : c.getAddedSubList()) {
                     lamp.selectedProperty().bind(Bindings.createBooleanBinding(
@@ -99,13 +98,13 @@ public class Main extends Application {
         var addButton = new Button("Neu");
         addButton.setOnAction(event -> {
             var lamp = new Lamp();
-            lamps.add(lamp);
+            lampsContainer.getLamps().add(lamp);
         });
 
         var removeButton = new Button("Entfernen");
         removeButton.disableProperty().bind(noLamp);
         removeButton.setOnAction(event -> {
-            lamps.removeAll(lampsContainer.getSelectedLamps());
+            lampsContainer.getLamps().removeAll(lampsContainer.getSelectedLamps());
             lampsContainer.getSelectedLamps().clear();
         });
 
@@ -182,7 +181,7 @@ public class Main extends Application {
         toggleButton.disableProperty().bind(noGroup);
         toggleButton.setOnAction(event -> {
             var selectedGroups = listView.getSelectionModel().getSelectedItems();
-            var selectedLamps = lamps.stream()
+            var selectedLamps = lampsContainer.getLamps().stream()
                     .filter(lamp -> selectedGroups.contains(lamp.getGroup()))
                     .collect(Collectors.toList());
 
@@ -213,7 +212,7 @@ public class Main extends Application {
             groupsToRemove.forEach(groups::remove);
 
             // remove all lamps from those groups
-            lamps.stream()
+            lampsContainer.getLamps().stream()
                     .filter(lamp -> groupsToRemove.contains(lamp.getGroup()))
                     .forEach(lamp -> lamp.setGroup(null));
         });
