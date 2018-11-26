@@ -3,6 +3,7 @@ package lamps;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.BorderPane;
 
@@ -14,6 +15,9 @@ public class LampsContainer extends BorderPane {
     private final ObservableList<Lamp> lamps = FXCollections.observableArrayList();
 
     public LampsContainer() {
+        // accept focus
+        setFocusTraversable(true);
+
         // bind the content to the lamps
         Bindings.bindContent(getChildren(), lamps);
 
@@ -41,6 +45,8 @@ public class LampsContainer extends BorderPane {
         });
 
         setOnMouseClicked(event -> {
+            requestFocus();
+
             var target = event.getTarget();
             if (event.getButton() == MouseButton.PRIMARY && target instanceof Lamp) {
                 // Remove the lamp if it was already selected
@@ -51,6 +57,15 @@ public class LampsContainer extends BorderPane {
                     selectedLamps.add((Lamp) target);
                 else
                     selectedLamps.setAll((Lamp) target);
+            }
+        });
+
+        setOnKeyPressed(event -> {
+            if (event.isControlDown() && event.getCode() == KeyCode.A) {
+                if (event.isShiftDown())
+                    selectedLamps.clear();
+                else
+                    selectedLamps.setAll(lamps);
             }
         });
     }
