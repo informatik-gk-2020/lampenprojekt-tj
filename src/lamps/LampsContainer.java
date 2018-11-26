@@ -49,14 +49,13 @@ public class LampsContainer extends BorderPane {
 
             var target = event.getTarget();
             if (event.getButton() == MouseButton.PRIMARY && target instanceof Lamp) {
-                // Remove the lamp if it was already selected
-                if (selectedLamps.remove(target))
-                    return;
-
-                if (event.isControlDown())
-                    selectedLamps.add((Lamp) target);
-                else
+                if (event.isControlDown()) {
+                    // Remove the lamp if it was already selected
+                    if (!selectedLamps.remove(target))
+                        selectedLamps.add((Lamp) target);
+                } else {
                     selectedLamps.setAll((Lamp) target);
+                }
             } else {
                 selectedLamps.clear();
             }
