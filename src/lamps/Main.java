@@ -16,42 +16,35 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Die Hauptklasse der Anwendung
+ */
 public class Main extends Application {
     private final ObservableList<Group> groups = FXCollections.observableArrayList();
-    //private final ObservableList<Lamp> lamps = FXCollections.observableArrayList();
 
     private final SimpleObjectProperty<Group> selectedGroup = new SimpleObjectProperty<>(null);
 
     private LampsContainer lampsContainer;
 
+    /**
+     * Der Einstiegspunkt der Anwendung
+     */
     public static void main(String[] args) {
-        launch(args);
+        launch(args); // JavaFX starten
     }
 
+    /**
+     * Wird beim Starten des Programms aufgerufen
+     */
     @Override
     public void start(Stage primaryStage) {
         lampsContainer = new LampsContainer();
 
-        // Bind the selected property of all lamps that get added
-        var selectedLamps = lampsContainer.getSelectedLamps();
-        lampsContainer.getLamps().addListener((ListChangeListener<Lamp>) c -> {
-            while(c.next()) {
-                for (var lamp : c.getAddedSubList()) {
-                    lamp.selectedProperty().bind(Bindings.createBooleanBinding(
-                            () -> selectedLamps.contains(lamp),
-                            selectedLamps
-                    ));
-                }
-
-                for (var lamp : c.getRemoved()) {
-                    lamp.selectedProperty().unbind();
-                }
-            }
-        });
-
+        // Toolbar und Gruppenpanel erstellen
         var toolbar = createToolbar();
         var groupsPane = createGroupsPane();
 
+        // Alles zu einem Layout zusammenfügen
         var rootPane = new BorderPane(
                 lampsContainer,
                 toolbar,
@@ -60,9 +53,11 @@ public class Main extends Application {
                 null
         );
 
+        // In eine Szene einfügen
         var scene = new Scene(rootPane);
         primaryStage.setScene(scene);
 
+        // Das Fenster anzeigen
         primaryStage.setHeight(400);
         primaryStage.setWidth(650);
         primaryStage.setTitle("Lampen");
@@ -83,26 +78,36 @@ public class Main extends Application {
         }
     }
 
+    /**
+     * Erstellt die Toolbar
+     * @return die erstellte Toolbar
+     */
     private ToolBar createToolbar() {
         // conditions
         var noLamp = Bindings.isEmpty(lampsContainer.getSelectedLamps());
 
+        // löst eine Änderung aus, wenn sich die Gruppe einer ausgewählten Lampe geändert hat
+        var groupsChange = new GroupsChangeObservable(lampsContainer.getSelectedLamps());
+
         // toggle
 
+        // schaltet alle ausgewählten Lampen um
         var toggleButton = new Button("Umschalten");
-        toggleButton.disableProperty().bind(noLamp);
+        toggleButton.disableProperty().bind(noLamp); // deaktivieren, wenn nichts ausgewählt ist
         toggleButton.setOnAction(event -> toggleLamps(lampsContainer.getSelectedLamps()));
 
         // add and remove
 
+        // fügt eine neue Lampe ein
         var addButton = new Button("Neu");
         addButton.setOnAction(event -> {
             var lamp = new Lamp();
             lampsContainer.getLamps().add(lamp);
         });
 
+        // entfernt alle ausgewählten Lampen
         var removeButton = new Button("Entfernen");
-        removeButton.disableProperty().bind(noLamp);
+        removeButton.disableProperty().bind(noLamp); // deaktivieren, wenn nichts ausgewählt ist
         removeButton.setOnAction(event -> {
             lampsContainer.getLamps().removeAll(lampsContainer.getSelectedLamps());
             lampsContainer.getSelectedLamps().clear();
@@ -110,6 +115,7 @@ public class Main extends Application {
 
         // group related buttons
 
+        // fügt alle ausgewählten Lampen zur ausgewählten Gruppe hinzu
         var addToGroupButton = new Button("Zur Gruppe hinzufügen");
         addToGroupButton.setOnAction(event -> {
             var group = selectedGroup.get();
@@ -125,8 +131,9 @@ public class Main extends Application {
             var lamps = lampsContainer.getSelectedLamps();
 
             return group == null || lamps.isEmpty() || lamps.stream().allMatch(lamp -> lamp.getGroup() == group);
-        }, selectedGroup, lampsContainer.getSelectedLamps()));
+        }, selectedGroup, lampsContainer.getSelectedLamps(), groupsChange));
 
+        // entfernt alle ausgewählten Lampen aus ihren Gruppen
         var removeFromGroupButton = new Button("Aus Gruppe entfernen");
         removeFromGroupButton.setOnAction(event -> {
             for (var lamp : lampsContainer.getSelectedLamps()) {
@@ -137,7 +144,7 @@ public class Main extends Application {
         // disable the button if none of the selected lamps have a group
         removeFromGroupButton.disableProperty().bind(Bindings.createBooleanBinding(
                 () -> lampsContainer.getSelectedLamps().stream().allMatch(lamp -> lamp.getGroup() == null),
-                lampsContainer.getSelectedLamps()
+                lampsContainer.getSelectedLamps(), groupsChange
         ));
 
         // create the toolbar
@@ -153,13 +160,21 @@ public class Main extends Application {
         );
     }
 
+    /**
+     * Erstellt das Gruppenpanel
+     * @return das Gruppenpanel
+     */
     private BorderPane createGroupsPane() {
+        // die Liste der Gruppen
         var listView = new ListView<Group>();
         listView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         listView.setItems(groups);
         listView.setEditable(true);
+
+        // selectedGroup soll immer die zuletzt gewählte Gruppe enthalten
         selectedGroup.bind(listView.getSelectionModel().selectedItemProperty());
 
+        // Die Zellen sollen bearbeitbar sein
         listView.setCellFactory(list -> {
             var cell = new TextFieldListCell<Group>();
             cell.updateListView(list);
@@ -167,41 +182,54 @@ public class Main extends Application {
             return cell;
         });
 
+        // Toolbar erstellen
         var toolbar = createGroupsToolBar(listView);
+
+        // Zum Layout zusammenfügen und zurückgeben
         return new BorderPane(listView, null, null, toolbar, null);
     }
 
+    /**
+     * Erstellt die Gruppentoolbar
+     * @param listView die Liste der Gruppen
+     * @return die erstellte Toolbar
+     */
     private ToolBar createGroupsToolBar(ListView<Group> listView) {
         // conditions
         var noGroup = Bindings.isEmpty(listView.getSelectionModel().getSelectedItems());
 
         // toggle
 
+        // schaltet alle Lampen in allem ausgewählten Gruppen um
         var toggleButton = new Button("Umschalten");
         toggleButton.disableProperty().bind(noGroup);
         toggleButton.setOnAction(event -> {
+            // Lampen ermitteln
             var selectedGroups = listView.getSelectionModel().getSelectedItems();
             var selectedLamps = lampsContainer.getLamps().stream()
                     .filter(lamp -> selectedGroups.contains(lamp.getGroup()))
                     .collect(Collectors.toList());
 
+            // Lampen umschalten
             toggleLamps(selectedLamps);
         });
 
         // add and remove
 
+        // fügt eine neue Gruppe ein
         var addButton = new Button("Neu");
         addButton.setOnAction(event -> {
             var group = new Group("Neue Gruppe");
             groups.add(group);
-            var itemIndex = groups.indexOf(group);
 
+            var itemIndex = groups.indexOf(group);
             listView.layout(); // necessary to update the ListView before editing the item
             listView.scrollTo(itemIndex);
             listView.getSelectionModel().clearAndSelect(itemIndex); // replace the current selection
-            listView.edit(itemIndex);
+            listView.edit(itemIndex); // die Gruppe soll direkt bearbeitet werden
         });
 
+        // entfernt alle ausgewählten Gruppen
         var removeButton = new Button("Entfernen");
         removeButton.disableProperty().bind(noGroup);
         removeButton.setOnAction(event -> {
@@ -217,6 +245,7 @@ public class Main extends Application {
                     .forEach(lamp -> lamp.setGroup(null));
         });
 
+        // Toolbar erstellen und zurückgeben
         return new ToolBar(
                 toggleButton,
                 new Separator(),
