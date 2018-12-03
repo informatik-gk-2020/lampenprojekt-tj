@@ -40,23 +40,6 @@ public class Main extends Application {
     public void start(Stage primaryStage) {
         lampsContainer = new LampsContainer();
 
-        // Bind the selected property of all lamps that get added
-        var selectedLamps = lampsContainer.getSelectedLamps();
-        lampsContainer.getLamps().addListener((ListChangeListener<Lamp>) c -> {
-            while(c.next()) {
-                for (var lamp : c.getAddedSubList()) {
-                    lamp.selectedProperty().bind(Bindings.createBooleanBinding(
-                            () -> selectedLamps.contains(lamp),
-                            selectedLamps
-                    ));
-                }
-
-                for (var lamp : c.getRemoved()) {
-                    lamp.selectedProperty().unbind();
-                }
-            }
-        });
-
         // Toolbar und Gruppenpanel erstellen
         var toolbar = createToolbar();
         var groupsPane = createGroupsPane();
