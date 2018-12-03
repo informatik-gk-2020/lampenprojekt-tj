@@ -15,24 +15,32 @@ import javafx.scene.shape.Circle;
  */
 public class Lamp extends Circle {
     private static final Color OFF_COLOR = Color.GREY;
-    private static final Color ON_COLOR = Color.YELLOW;
+
+    public static final Color DEFAULT_COLOR = Color.YELLOW;
 
     private final SimpleBooleanProperty on = new SimpleBooleanProperty(false);
     private final SimpleObjectProperty<Group> group = new SimpleObjectProperty<>(null);
     private final SimpleBooleanProperty selected = new SimpleBooleanProperty(false);
 
     public Lamp() {
+        // die aktuelle Farbe ist abhängig von der Gruppe
+        var currentColor = Bindings.when(group.isNull())
+                .then(DEFAULT_COLOR) // Standardfarbe, wenn keine Gruppe vorhanden ist
+                .otherwise(Bindings.select(group, "color"));
+
         setRadius(20);
 
         // die Farbe, abhängig vom Zustand
-        fillProperty().bind(Bindings.when(on).then(ON_COLOR).otherwise(OFF_COLOR));
+        fillProperty().bind(Bindings.when(on).then(currentColor).otherwise(OFF_COLOR));
 
         // der Rahmen, abhängig davon, ob die Lampe ausgewählt ist
         strokeProperty().bind(Bindings.when(selected).then(Color.BLACK).otherwise(Color.GREY));
         setStrokeWidth(1);
 
         // der Schein der Lampe
-        var shadowEffect = new DropShadow(20, ON_COLOR);
+        var shadowEffect = new DropShadow();
+        shadowEffect.setRadius(20);
+        shadowEffect.colorProperty().bind(currentColor);
         // wird nur aktiviert, wen die Lampe angeschaltet ist:
         effectProperty().bind(Bindings.when(on).then(shadowEffect).otherwise((DropShadow)null));
 
