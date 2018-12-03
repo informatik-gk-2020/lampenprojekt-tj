@@ -86,6 +86,9 @@ public class Main extends Application {
         // conditions
         var noLamp = Bindings.isEmpty(lampsContainer.getSelectedLamps());
 
+        // löst eine Änderung aus, wenn sich die Gruppe einer ausgewählten Lampe geändert hat
+        var groupsChange = new GroupsChangeObservable(lampsContainer.getSelectedLamps());
+
         // toggle
 
         // schaltet alle ausgewählten Lampen um
@@ -128,7 +131,7 @@ public class Main extends Application {
             var lamps = lampsContainer.getSelectedLamps();
 
             return group == null || lamps.isEmpty() || lamps.stream().allMatch(lamp -> lamp.getGroup() == group);
-        }, selectedGroup, lampsContainer.getSelectedLamps()));
+        }, selectedGroup, lampsContainer.getSelectedLamps(), groupsChange));
 
         // entfernt alle ausgewählten Lampen aus ihren Gruppen
         var removeFromGroupButton = new Button("Aus Gruppe entfernen");
@@ -141,7 +144,7 @@ public class Main extends Application {
         // disable the button if none of the selected lamps have a group
         removeFromGroupButton.disableProperty().bind(Bindings.createBooleanBinding(
                 () -> lampsContainer.getSelectedLamps().stream().allMatch(lamp -> lamp.getGroup() == null),
-                lampsContainer.getSelectedLamps()
+                lampsContainer.getSelectedLamps(), groupsChange
         ));
 
         // create the toolbar
